@@ -7,7 +7,7 @@
 - Next.js 16 + React 19 + TypeScript 5 + Tailwind CSS v4
 - **UI**: shadcn/ui (Tailwind 기반 컴포넌트) — shadcn MCP 활용
 - Vercel AI SDK (`ai` + `@ai-sdk/google`) + Gemini 2.5 Flash
-- Supabase (PostgreSQL) — 서버사이드 전용 (service role key)
+- Supabase (PostgreSQL) — anon key + RLS (Row Level Security)
 - Recharts 3.x — 차트 시각화 (고정 HEX 색상 팔레트, CSS 변수 미사용)
 - bignumber.js — 숫자 소수점 2자리 버림 처리
 - Zod — AI 응답 구조화
@@ -22,11 +22,15 @@
 - Server Action (`src/app/actions.ts`)이 전체 흐름 조율
 - AI 호출 → SQL 검증 → DB 실행 → 결과 반환 모두 서버사이드
 - 클라이언트는 결과 렌더링만 담당 (테이블 + 차트)
+- **Google AI API key**: 사용자가 브라우저에서 입력 → localStorage 저장 → Server Action에 전달
+- **Supabase**: anon key + RLS로 보호 (SELECT만 허용)
 
 ## 주요 규칙
-- `SUPABASE_SERVICE_ROLE_KEY`는 절대 클라이언트에 노출하지 않음
+- Supabase는 **anon key** 사용 — RLS(Row Level Security)로 SELECT만 허용
+- `execute_sql` RPC 함수는 `SECURITY INVOKER` — anon 권한으로 실행, RLS 적용
 - SQL 실행 전 반드시 `validateSQL()`로 SELECT 여부 검증
-- `execute_sql` RPC 함수는 학습용 — 프로덕션에서는 read-only DB role 사용 필요
+- Google AI API key는 서버 환경변수가 아닌 **사용자가 브라우저에서 직접 입력**
+- AI SDK의 `createGoogleGenerativeAI({ apiKey })` 패턴으로 사용자 제공 키 사용
 - AI SDK의 `generateText` + `Output.object()` 패턴 사용 (deprecated `generateObject` 사용 금지)
 - UI 컴포넌트는 shadcn/ui 사용 — shadcn MCP로 설치
 
@@ -40,8 +44,8 @@
 
 ## 환경변수 (.env.local)
 - `SUPABASE_URL` — Supabase 프로젝트 URL
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key
-- `GOOGLE_GENERATIVE_AI_API_KEY` — Google AI Studio API key
+- `SUPABASE_ANON_KEY` — Supabase anon/public key (RLS로 보호)
+- ~~`GOOGLE_GENERATIVE_AI_API_KEY`~~ — 사용자가 브라우저에서 직접 입력 (서버 환경변수 불필요)
 
 ## 패키지 매니저
 - **pnpm** 사용 (npm 대신)
@@ -117,7 +121,7 @@ interface QueryResult {
 
 ### Step 3: DB 관련 파일 생성 — Supabase 클라이언트 + Seed SQL
 **작업 내용:**
-- `src/lib/supabase.ts` — Supabase 서버 클라이언트 (service role key)
+- `src/lib/supabase.ts` — Supabase 서버 클라이언트 (anon key + RLS)
 - `supabase/seed.sql` — 테이블 생성 + 더미데이터 + `execute_sql` RPC 함수
 - `src/lib/schema.ts` — DDL 스키마 문자열 + few-shot 예시 (AI 프롬프트용)
 
@@ -196,13 +200,14 @@ interface QueryResult {
 
 ---
 
-### Step 7: UI 컴포넌트 (5개) — shadcn/ui 기반
+### Step 7: UI 컴포넌트 (6개) — shadcn/ui 기반
 **작업 내용:**
 - `src/components/query-input.tsx` — 텍스트 입력 + 예시 질문 버튼 (shadcn Button, Input 사용)
 - `src/components/sql-viewer.tsx` — 생성된 SQL + 설명 표시 (shadcn Card 사용)
 - `src/components/results-table.tsx` — 쿼리 결과 테이블 (shadcn Table 사용)
 - `src/components/chart-view.tsx` — Recharts 차트 (bar/line/pie 동적 전환, shadcn Card 래핑, bignumber.js로 소수점 처리)
 - `src/components/error-message.tsx` — 에러 표시 (shadcn Alert 사용)
+- `src/components/result-skeleton.tsx` — 로딩 스켈레톤 (shadcn Skeleton 사용)
 
 **모두 `"use client"` 컴포넌트, shadcn/ui 컴포넌트 활용**
 
@@ -214,12 +219,13 @@ interface QueryResult {
 - `src/components/results-table.tsx`
 - `src/components/chart-view.tsx`
 - `src/components/error-message.tsx`
+- `src/components/result-skeleton.tsx`
 
 ---
 
 ### Step 8: 메인 페이지 + 레이아웃 수정
 **작업 내용:**
-- `src/app/page.tsx` — 메인 UI로 교체 (Client Component, 컴포넌트 조합)
+- `src/app/page.tsx` — 메인 UI로 교체 (Server Component, QueryContainer 렌더링)
 - `src/app/layout.tsx` — 메타데이터 수정 (title, description, lang="ko")
 
 **검증:** `pnpm tsc --noEmit` + `pnpm build` 통과
@@ -233,10 +239,10 @@ interface QueryResult {
 ### Step 9: Supabase 설정 (유저 직접 수행)
 **유저가 직접 수행하는 단계:**
 1. [supabase.com](https://supabase.com) 가입 → 새 프로젝트 생성
-2. SQL Editor에서 `supabase/seed.sql` 전체 내용 복사-붙여넣기 → Run
-3. Settings > API에서 Project URL과 service_role key 복사
-4. `.env.local`에 실제 값 입력
-5. [Google AI Studio](https://aistudio.google.com/apikey)에서 API key 발급 → `.env.local`에 입력
+2. SQL Editor에서 `supabase/seed.sql` 전체 내용 복사-붙여넣기 → Run (RLS 정책 포함)
+3. Settings > API에서 Project URL과 **anon key** 복사
+4. `.env.local`에 `SUPABASE_URL`과 `SUPABASE_ANON_KEY` 입력
+5. Google AI API key는 브라우저에서 직접 입력 (서버 환경변수 불필요)
 
 ---
 
@@ -272,12 +278,19 @@ src/
       table.tsx
       badge.tsx
       alert.tsx
+      skeleton.tsx
+      dialog.tsx
       ...
+    query-container.tsx  ← Step 8 (API key 통합, 메인 컨테이너)
+    api-key-dialog.tsx   ← API key 입력 다이얼로그
     query-input.tsx      ← Step 7
     sql-viewer.tsx       ← Step 7
     results-table.tsx    ← Step 7
     chart-view.tsx       ← Step 7
     error-message.tsx    ← Step 7
+    result-skeleton.tsx  ← Step 7 (로딩 스켈레톤)
+  hooks/
+    use-api-key.ts       ← localStorage API key 관리 훅
   lib/
     utils.ts             ← Step 1 (shadcn/ui 유틸)
     supabase.ts          ← Step 3
@@ -297,12 +310,16 @@ pnpm-workspace.yaml      ← pnpm 워크스페이스 설정
 CLAUDE.md                ← 이 파일
 ```
 
+## 보안 모델
+- **Supabase**: anon key + RLS → SELECT만 허용, 시스템 테이블 접근 차단
+- **execute_sql**: `SECURITY INVOKER` → anon 권한으로 실행, RLS 적용
+- **Google AI API key**: 사용자 브라우저 localStorage에만 저장 → Server Action 호출 시 전달
+- **SQL 검증**: `validateSQL()`로 위험 키워드 차단 (이중 방어)
+
 ## 주의사항
-- `SUPABASE_SERVICE_ROLE_KEY`는 서버사이드(Server Action)에서만 사용 — 클라이언트에 노출 금지
 - Recharts는 SSR 미지원 → `"use client"` 필수
 - Recharts SVG는 CSS 변수(`hsl(var(...))`)를 해석 못함 → 고정 HEX 색상 팔레트 사용
 - Supabase의 NUMERIC 컬럼은 문자열로 반환 → ChartView에서 `BigNumber().decimalPlaces(2, ROUND_DOWN).toNumber()` 처리
-- `execute_sql` RPC 함수는 학습용으로만 사용
 - 한국어 입력 시 AI가 한국어로 explanation 반환하도록 프롬프트에 명시
 - shadcn/ui 컴포넌트 설치 시 shadcn MCP 활용
 - E2E 테스트는 Playwright MCP로 브라우저 제어하여 실행

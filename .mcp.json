@@ -7,6 +7,10 @@
     "playwright": {
       "command": "npx",
       "args": ["@playwright/mcp@latest"]
+    },
+    "reactbits": {
+      "command": "npx",
+      "args": ["reactbits-dev-mcp-server"]
     }
   }
 }

@@ -182,14 +182,27 @@ FROM (
 JOIN products p ON p.id = gen.pid;
 
 -- ============================================
--- 5. execute_sql RPC 함수 (학습용)
+-- 5. RLS (Row Level Security) 설정
 -- ============================================
--- 주의: 프로덕션에서는 사용 금지. read-only DB role 사용 필요.
+-- anon key로 접근 시 SELECT만 허용
+
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "public_read" ON customers FOR SELECT USING (true);
+CREATE POLICY "public_read" ON products FOR SELECT USING (true);
+CREATE POLICY "public_read" ON orders FOR SELECT USING (true);
+
+-- ============================================
+-- 6. execute_sql RPC 함수 (학습용)
+-- ============================================
+-- SECURITY INVOKER: 호출자(anon) 권한으로 실행 → RLS 적용
 
 CREATE OR REPLACE FUNCTION execute_sql(query_text TEXT)
 RETURNS JSON
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 AS $$
 DECLARE
   result JSON;

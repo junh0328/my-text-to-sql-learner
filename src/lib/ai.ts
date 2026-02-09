@@ -1,5 +1,5 @@
 import { generateText, Output } from "ai";
-import { google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
 import { DATABASE_SCHEMA, FEW_SHOT_EXAMPLES } from "./schema";
 
@@ -51,8 +51,11 @@ ${examples}`;
 }
 
 export async function generateSqlQuery(
-  userQuestion: string
+  userQuestion: string,
+  apiKey: string
 ): Promise<AiResponse> {
+  const google = createGoogleGenerativeAI({ apiKey });
+
   const { output } = await generateText({
     model: google("gemini-2.5-flash"),
     output: Output.object({ schema: aiResponseSchema }),

@@ -27,28 +27,34 @@
 ## 아키텍처
 
 ```
-사용자 (자연어 입력)
+사용자
+    │
+    ├─ 첫 방문 시 API Key 입력 다이얼로그
+    │  (Google AI Studio에서 무료 발급)
+    │  → localStorage에 저장
+    │
+    ├─ 자연어 질문 입력
     │
     ▼
 ┌─────────────────────────────────────────────┐
 │  Client (React)                             │
-│  QueryInput → Server Action 호출            │
+│  API Key + 질문 → Server Action 호출        │
 │  결과 렌더링: SqlViewer / ChartView / Table  │
 └──────────────────┬──────────────────────────┘
                    │ Server Action
                    ▼
 ┌─────────────────────────────────────────────┐
 │  Server (Next.js)                           │
-│  1. Gemini API 호출 → SQL + 차트 설정 반환   │
+│  1. 사용자 API Key로 Gemini 호출            │
 │  2. SQL 안전성 검증 (SELECT/WITH만 허용)     │
-│  3. Supabase RPC로 SQL 실행                 │
+│  3. Supabase RPC로 SQL 실행 (anon + RLS)    │
 │  4. QueryResult 반환                        │
 └─────────────────────────────────────────────┘
 ```
 
 - **서버**: AI 호출, SQL 검증, DB 실행 모두 Server Action에서 처리
-- **클라이언트**: 결과 렌더링만 담당 (테이블 + 차트)
-- API 키는 서버사이드에서만 사용되며 클라이언트에 노출되지 않음
+- **클라이언트**: API Key 관리 (localStorage) + 결과 렌더링
+- **DB 보안**: anon key + RLS로 SELECT만 허용, 시스템 테이블 접근 차단
 
 ## 기술 스택
 
@@ -80,24 +86,22 @@ pnpm install
 cp .env.example .env.local
 ```
 
-`.env.local` 파일을 열고 아래 값을 입력합니다:
+`.env.local` 파일을 열고 Supabase 정보를 입력합니다:
 
 ```env
 # Supabase 대시보드 > Settings > API 에서 확인
 SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...YOUR_SERVICE_ROLE_KEY
-
-# Google AI Studio에서 무료 발급: https://aistudio.google.com/apikey
-GOOGLE_GENERATIVE_AI_API_KEY=AIza...YOUR_KEY
+SUPABASE_ANON_KEY=eyJhbGci...YOUR_ANON_KEY
 ```
+
+> Google AI API key는 서버 환경변수로 설정하지 않습니다.
+> 사용자가 브라우저에서 직접 입력하는 방식입니다.
 
 ### 3. Supabase 데이터베이스 설정
 
 1. [supabase.com](https://supabase.com)에서 새 프로젝트 생성
-2. SQL Editor에서 `supabase/seed.sql` 내용을 복사-붙여넣기 후 실행
-3. Settings > API에서 **Project URL**과 **service_role key**를 복사하여 `.env.local`에 입력
-
-> service_role key 찾는 법: Settings > API > Legacy API keys 탭 > `service_role` 항목의 Reveal 클릭
+2. SQL Editor에서 `supabase/seed.sql` 전체 내용을 복사-붙여넣기 후 실행 (RLS 정책 포함)
+3. Settings > API에서 **Project URL**과 **anon key**를 복사하여 `.env.local`에 입력
 
 ### 4. 개발 서버 실행
 
@@ -134,14 +138,19 @@ src/
     actions.ts             # Server Action (AI → 검증 → DB 실행)
   components/
     ui/                    # shadcn/ui 컴포넌트
+    query-container.tsx    # 메인 컨테이너 (API key 통합)
+    api-key-dialog.tsx     # API key 입력 다이얼로그
     query-input.tsx        # 텍스트 입력 + 예시 질문 버튼
     sql-viewer.tsx         # 생성된 SQL + 설명 표시
     results-table.tsx      # 쿼리 결과 테이블
     chart-view.tsx         # Recharts 차트 (bar/line/pie)
     error-message.tsx      # 에러 표시
+    result-skeleton.tsx    # 로딩 스켈레톤
+  hooks/
+    use-api-key.ts         # localStorage API key 관리
   lib/
     ai.ts                  # Gemini 프롬프트 + generateText 호출
-    supabase.ts            # Supabase 서버 클라이언트
+    supabase.ts            # Supabase 서버 클라이언트 (anon key)
     schema.ts              # DDL 스키마 + few-shot 예시
     validate-sql.ts        # SQL 안전성 검증
     __tests__/
@@ -161,9 +170,17 @@ pnpm tsc --noEmit   # 타입 체크
 pnpm vitest run     # 단위 테스트 실행
 ```
 
+## 보안
+
+- **Supabase**: anon key + RLS(Row Level Security)로 보호
+  - 3개 테이블에 SELECT 전용 정책 적용
+  - `execute_sql` RPC는 `SECURITY INVOKER` — anon 권한으로 실행, RLS 적용
+  - 시스템 테이블 및 데이터 변경 차단
+- **Google AI API Key**: 사용자 브라우저 localStorage에만 저장
+  - 서버에 영구 저장되지 않음
+  - Server Action 호출 시 일회성으로 전달
+
 ## 주의사항
 
-- **학습용 프로젝트**입니다. `execute_sql` RPC 함수는 프로덕션에서는 read-only DB role로 대체해야 합니다.
-- `SUPABASE_SERVICE_ROLE_KEY`는 서버사이드(Server Action)에서만 사용되며 클라이언트에 노출되지 않습니다.
 - Recharts SVG는 CSS 변수를 해석하지 못하므로 고정 HEX 색상 팔레트를 사용합니다.
 - Supabase의 NUMERIC 컬럼은 문자열로 반환되므로 bignumber.js로 소수점 2자리 버림 처리합니다.

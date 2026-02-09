@@ -15,6 +15,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+const MAX_DISPLAY_ROWS = 100;
+
 interface ResultsTableProps {
   columns: string[];
   rows: Record<string, unknown>[];
@@ -30,6 +32,9 @@ export function ResultsTable({ columns, rows }: ResultsTableProps) {
       </Card>
     );
   }
+
+  const displayRows = rows.slice(0, MAX_DISPLAY_ROWS);
+  const hasMore = rows.length > MAX_DISPLAY_ROWS;
 
   return (
     <Card>
@@ -49,7 +54,7 @@ export function ResultsTable({ columns, rows }: ResultsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row, i) => (
+              {displayRows.map((row, i) => (
                 <TableRow key={i}>
                   {columns.map((col) => (
                     <TableCell key={col}>{String(row[col] ?? "")}</TableCell>
@@ -59,6 +64,11 @@ export function ResultsTable({ columns, rows }: ResultsTableProps) {
             </TableBody>
           </Table>
         </div>
+        {hasMore && (
+          <p className="mt-3 text-center text-sm text-muted-foreground">
+            전체 {rows.length}건 중 {MAX_DISPLAY_ROWS}건만 표시합니다.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
