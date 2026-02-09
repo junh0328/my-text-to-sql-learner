@@ -21,18 +21,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import BigNumber from "bignumber.js";
 import type { ChartConfig } from "@/types";
 
 const COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
+  "#e76e50",
+  "#2a9d8f",
+  "#264653",
+  "#e9c46a",
+  "#f4a261",
   "#8884d8",
   "#82ca9d",
   "#ffc658",
 ];
+
+const PRIMARY_COLOR = COLORS[0];
 
 interface ChartViewProps {
   config: ChartConfig;
@@ -40,10 +43,12 @@ interface ChartViewProps {
 }
 
 export function ChartView({ config, rows }: ChartViewProps) {
-  // 숫자 컬럼은 Number()로 변환 (Supabase NUMERIC은 문자열로 반환)
+  // 숫자 컬럼은 BigNumber로 소수점 2자리 버림 처리 (Supabase NUMERIC은 문자열로 반환)
   const data = rows.map((row) => ({
     ...row,
-    [config.yKey]: Number(row[config.yKey]),
+    [config.yKey]: new BigNumber(String(row[config.yKey]))
+      .decimalPlaces(2, BigNumber.ROUND_DOWN)
+      .toNumber(),
   }));
 
   return (
@@ -59,7 +64,14 @@ export function ChartView({ config, rows }: ChartViewProps) {
               <XAxis dataKey={config.xKey} />
               <YAxis />
               <Tooltip />
-              <Bar dataKey={config.yKey} fill="hsl(var(--chart-1))" />
+              <Bar dataKey={config.yKey}>
+                {data.map((_, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Bar>
             </BarChart>
           ) : config.chartType === "line" ? (
             <LineChart data={data}>
@@ -70,7 +82,7 @@ export function ChartView({ config, rows }: ChartViewProps) {
               <Line
                 type="monotone"
                 dataKey={config.yKey}
-                stroke="hsl(var(--chart-1))"
+                stroke={PRIMARY_COLOR}
                 strokeWidth={2}
               />
             </LineChart>
