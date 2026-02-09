@@ -7,9 +7,12 @@ import { Input } from "@/components/ui/input";
 const EXAMPLE_QUESTIONS = [
   "도시별 고객 수는?",
   "월별 매출 추이 보여줘",
-  "30달러 미만 상품 목록",
+  "카테고리별 매출 순위",
+  "연령대별 주문 현황",
+  "성별 구매 금액 비교",
+  "브랜드별 평균 평점",
+  "가장 많이 팔린 상품 TOP 10",
   "주문 상태별 비율은?",
-  "가장 많이 팔린 상품 TOP 5",
 ];
 
 interface QueryInputProps {

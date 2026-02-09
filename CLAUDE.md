@@ -31,9 +31,12 @@
 - UI 컴포넌트는 shadcn/ui 사용 — shadcn MCP로 설치
 
 ## 데이터베이스
-- 3개 테이블: customers(15건), products(12건), orders(30건)
+- 3개 테이블: customers(1,000건), products(50건), orders(3,000건)
+- customers: id, name, email, city(20개 도시), age, gender, joined_at
+- products: id, name, category(10개 카테고리), brand, price, stock, rating, created_at
+- orders: id, customer_id(FK), product_id(FK), quantity, total_price, order_date, status
 - 스키마 정의: `src/lib/schema.ts`
-- 시드 데이터: `supabase/seed.sql`
+- 시드 데이터: `supabase/seed.sql` (상품은 정적, 고객/주문은 동적 생성)
 
 ## 환경변수 (.env.local)
 - `SUPABASE_URL` — Supabase 프로젝트 URL
@@ -126,9 +129,9 @@ interface QueryResult {
 - `supabase/seed.sql`
 
 **DB 테이블:**
-- `customers` (15건): id, name, email, city, joined_at
-- `products` (12건): id, name, category, price, stock, created_at
-- `orders` (30건): id, customer_id(FK), product_id(FK), quantity, total_price, order_date, status
+- `customers` (1,000건): id, name, email, city(20개 도시), age, gender, joined_at
+- `products` (50건): id, name, category(10개 카테고리), brand, price, stock, rating, created_at
+- `orders` (3,000건): id, customer_id(FK), product_id(FK), quantity, total_price, order_date, status
 
 ---
 
