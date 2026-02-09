@@ -6,11 +6,12 @@
 ## 기술 스택
 - Next.js 16 + React 19 + TypeScript 5 + Tailwind CSS v4
 - **UI**: shadcn/ui (Tailwind 기반 컴포넌트) — shadcn MCP 활용
-- Vercel AI SDK (`ai` + `@ai-sdk/google`) + Gemini 2.0 Flash
+- Vercel AI SDK (`ai` + `@ai-sdk/google`) + Gemini 2.5 Flash
 - Supabase (PostgreSQL) — 서버사이드 전용 (service role key)
-- Recharts 3.x — 차트 시각화
+- Recharts 3.x — 차트 시각화 (고정 HEX 색상 팔레트, CSS 변수 미사용)
+- bignumber.js — 숫자 소수점 2자리 버림 처리
 - Zod — AI 응답 구조화
-- **테스트**: Playwright — E2E 테스트, Playwright MCP 활용
+- **테스트**: vitest (단위 테스트) + Playwright (E2E 테스트, Playwright MCP 활용)
 
 ## MCP 설정
 프로젝트 루트 `.mcp.json`에 설정됨:
@@ -61,7 +62,7 @@ pnpm tsc --noEmit # 타입 체크
 
 ### Step 1: 의존성 설치 + shadcn/ui 초기화
 **작업 내용:**
-- `pnpm add ai @ai-sdk/google @supabase/supabase-js recharts zod`
+- `pnpm add ai @ai-sdk/google @supabase/supabase-js recharts zod bignumber.js`
 - `package.json`에 `pnpm.overrides: { "react-is": "$react" }` 추가 (Recharts + React 19 호환)
 - shadcn/ui 초기화 (`pnpm dlx shadcn@latest init`)
 - 필요한 shadcn/ui 컴포넌트 설치 (button, input, card, table, badge 등)
@@ -79,12 +80,15 @@ pnpm tsc --noEmit # 타입 체크
 **작업 내용:**
 - `src/types/index.ts` — 공유 타입 정의 (`QueryResult`, `ChartConfig`)
 - `.env.local` — 환경변수 플레이스홀더 생성
+- `.env.example` — 환경변수 설정 가이드 (git 커밋용)
+- `.gitignore` 수정 — `.env*` → `.env.local`로 변경하여 `.env.example` 커밋 허용
 
 **검증:** `pnpm tsc --noEmit` 통과
 
 **생성 파일:**
 - `src/types/index.ts`
 - `.env.local`
+- `.env.example`
 
 **핵심 타입:**
 ```typescript
@@ -137,7 +141,8 @@ interface QueryResult {
 - 위험 키워드 차단: INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE
 - 다중 statement 차단 (세미콜론 중간 위치 거부)
 
-**검증:** `pnpm tsc --noEmit` 통과 + 테스트 코드 작성
+**검증:** `pnpm tsc --noEmit` 통과 + vitest 테스트 코드 작성 (`pnpm vitest run`)
+- `pnpm add -D vitest` 설치 필요
 
 **생성 파일:**
 - `src/lib/validate-sql.ts`
@@ -159,7 +164,7 @@ interface QueryResult {
 **핵심 구현:**
 - System prompt에 DDL 스키마 + few-shot 예시 포함
 - Zod 스키마로 구조화된 출력: `{ sql, chartConfig, explanation }`
-- 모델: `gemini-2.0-flash`
+- 모델: `gemini-2.5-flash`
 - 한국어/영어 모두 처리
 - "결과가 많을 경우 LIMIT 50 추가" 규칙 포함
 
@@ -193,7 +198,7 @@ interface QueryResult {
 - `src/components/query-input.tsx` — 텍스트 입력 + 예시 질문 버튼 (shadcn Button, Input 사용)
 - `src/components/sql-viewer.tsx` — 생성된 SQL + 설명 표시 (shadcn Card 사용)
 - `src/components/results-table.tsx` — 쿼리 결과 테이블 (shadcn Table 사용)
-- `src/components/chart-view.tsx` — Recharts 차트 (bar/line/pie 동적 전환, shadcn Card 래핑)
+- `src/components/chart-view.tsx` — Recharts 차트 (bar/line/pie 동적 전환, shadcn Card 래핑, bignumber.js로 소수점 처리)
 - `src/components/error-message.tsx` — 에러 표시 (shadcn Alert 사용)
 
 **모두 `"use client"` 컴포넌트, shadcn/ui 컴포넌트 활용**
@@ -282,15 +287,18 @@ src/
     index.ts             ← Step 2
 supabase/
   seed.sql               ← Step 3
-.env.local               ← Step 2
+.env.local               ← Step 2 (git 제외)
+.env.example             ← Step 2 (환경변수 가이드, git 포함)
 .mcp.json                ← MCP 설정 (shadcn, playwright)
+pnpm-workspace.yaml      ← pnpm 워크스페이스 설정
 CLAUDE.md                ← 이 파일
 ```
 
 ## 주의사항
 - `SUPABASE_SERVICE_ROLE_KEY`는 서버사이드(Server Action)에서만 사용 — 클라이언트에 노출 금지
 - Recharts는 SSR 미지원 → `"use client"` 필수
-- Supabase의 NUMERIC 컬럼은 문자열로 반환 → ChartView에서 `Number()` 변환 필요
+- Recharts SVG는 CSS 변수(`hsl(var(...))`)를 해석 못함 → 고정 HEX 색상 팔레트 사용
+- Supabase의 NUMERIC 컬럼은 문자열로 반환 → ChartView에서 `BigNumber().decimalPlaces(2, ROUND_DOWN).toNumber()` 처리
 - `execute_sql` RPC 함수는 학습용으로만 사용
 - 한국어 입력 시 AI가 한국어로 explanation 반환하도록 프롬프트에 명시
 - shadcn/ui 컴포넌트 설치 시 shadcn MCP 활용
