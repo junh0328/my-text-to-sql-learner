@@ -11,6 +11,7 @@ import { ResultsTable } from "@/components/results-table";
 import { ChartView } from "@/components/chart-view";
 import { ErrorMessage } from "@/components/error-message";
 import { ResultSkeleton } from "@/components/result-skeleton";
+import { TextType } from "@/components/text-type";
 import { Button } from "@/components/ui/button";
 import type { QueryResult } from "@/types";
 
@@ -66,7 +67,7 @@ export function QueryContainer() {
     <>
       <header className="mb-8 text-center">
         <div className="flex items-center justify-center gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Text-to-SQL</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Ask to DB!</h1>
           <Button
             variant="ghost"
             size="icon"
@@ -77,9 +78,23 @@ export function QueryContainer() {
             <Settings className="h-5 w-5" />
           </Button>
         </div>
-        <p className="mt-2 text-muted-foreground">
-          자연어로 데이터를 조회하고 시각화하세요
-        </p>
+        <div className="mt-2 h-7 text-muted-foreground">
+          <TextType
+            text={[
+              "도시별 고객 수는 몇 명인가요?",
+              "월별 매출 추이를 보여줘",
+              "가장 많이 팔린 상품 TOP 10",
+              "카테고리별 평균 가격은?",
+              "연령대별 주문 현황이 궁금해",
+            ]}
+            typingSpeed={40}
+            deletingSpeed={20}
+            pauseDuration={2500}
+            cursorCharacter="|"
+            className="text-base"
+            cursorClassName="text-muted-foreground"
+          />
+        </div>
       </header>
 
       <div className="space-y-6">
