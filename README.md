@@ -4,6 +4,8 @@
 
 한국어 또는 영어로 질문하면 AI가 SQL 쿼리를 생성하고, Supabase(PostgreSQL)에서 실행한 결과를 테이블과 차트로 보여줍니다.
 
+<img src="./docs/ask_to_db.gif" alt="ask to db landing page"/>
+
 ## 주요 기능
 
 - **자연어 → SQL 변환**: Gemini 2.5 Flash가 사용자 질문을 PostgreSQL 쿼리로 변환
