@@ -1,9 +1,20 @@
 # Text-to-SQL Learner
 
 ## 프로젝트 개요
+
 자연어를 SQL로 변환하여 데이터를 조회하고 시각화하는 학습용 서비스.
 
+## 관련 문서
+
+| 문서                                           | 설명                                                                 |
+| ---------------------------------------------- | -------------------------------------------------------------------- |
+| [README.md](./README.md)                       | 프로젝트 소개, 기능 목록, 시작하기 가이드                            |
+| [design.md](./design.md)                       | 비즈니스 로직 상세 설계 (시퀀스 다이어그램, API Key 흐름, 에러 처리) |
+| [optimization_list.md](./optimization_list.md) | 코드 평가 기반 개선 사항 목록 (우선순위별)                           |
+| [supabase/seed.sql](./supabase/seed.sql)       | DB 테이블 생성 + 시드 데이터 + RPC 함수 + RLS 정책                   |
+
 ## 기술 스택
+
 - Next.js 16 + React 19 + TypeScript 5 + Tailwind CSS v4
 - **UI**: shadcn/ui (Tailwind 기반 컴포넌트) — shadcn MCP 활용
 - Vercel AI SDK (`ai` + `@ai-sdk/google`) + Gemini 2.5 Flash
@@ -14,11 +25,14 @@
 - **테스트**: vitest (단위 테스트) + Playwright (E2E 테스트, Playwright MCP 활용)
 
 ## MCP 설정
+
 프로젝트 루트 `.mcp.json`에 설정됨:
+
 - **shadcn**: `npx shadcn@latest mcp` — shadcn/ui 컴포넌트 설치/관리
 - **playwright**: `npx @playwright/mcp@latest` — E2E 테스트 브라우저 제어
 
 ## 핵심 아키텍처
+
 - Server Action (`src/app/actions.ts`)이 전체 흐름 조율
 - AI 호출 → SQL 검증 → DB 실행 → 결과 반환 모두 서버사이드
 - 클라이언트는 결과 렌더링만 담당 (테이블 + 차트)
@@ -26,6 +40,7 @@
 - **Supabase**: anon key + RLS로 보호 (SELECT만 허용)
 
 ## 주요 규칙
+
 - Supabase는 **anon key** 사용 — RLS(Row Level Security)로 SELECT만 허용
 - `execute_sql` RPC 함수는 `SECURITY INVOKER` — anon 권한으로 실행, RLS 적용
 - SQL 실행 전 반드시 `validateSQL()`로 SELECT 여부 검증
@@ -35,6 +50,7 @@
 - UI 컴포넌트는 shadcn/ui 사용 — shadcn MCP로 설치
 
 ## 데이터베이스
+
 - 3개 테이블: customers(1,000건), products(50건), orders(3,000건)
 - customers: id, name, email, city(20개 도시), age, gender, joined_at
 - products: id, name, category(10개 카테고리), brand, price, stock, rating, created_at
@@ -43,14 +59,17 @@
 - 시드 데이터: `supabase/seed.sql` (상품은 정적, 고객/주문은 동적 생성)
 
 ## 환경변수 (.env.local)
+
 - `SUPABASE_URL` — Supabase 프로젝트 URL
 - `SUPABASE_ANON_KEY` — Supabase anon/public key (RLS로 보호)
 - ~~`GOOGLE_GENERATIVE_AI_API_KEY`~~ — 사용자가 브라우저에서 직접 입력 (서버 환경변수 불필요)
 
 ## 패키지 매니저
+
 - **pnpm** 사용 (npm 대신)
 
 ## 개발
+
 ```bash
 pnpm dev         # 개발 서버
 pnpm build       # 빌드
@@ -62,13 +81,16 @@ pnpm tsc --noEmit # 타입 체크
 ## 단계별 구현 가이드
 
 > 각 단계 완료 시 아래 프로세스를 따른다:
+>
 > 1. 유저에게 작업 내용을 알린다
 > 2. `pnpm tsc --noEmit` (타입 체크) + `pnpm build` (빌드) 실행
 > 3. 필요한 경우 테스트 코드 작성 후 테스트 통과 확인
 > 4. 유저 승인 후 다음 단계로 진행
 
 ### Step 1: 의존성 설치 + shadcn/ui 초기화
+
 **작업 내용:**
+
 - `pnpm add ai @ai-sdk/google @supabase/supabase-js recharts zod bignumber.js`
 - `package.json`에 `pnpm.overrides: { "react-is": "$react" }` 추가 (Recharts + React 19 호환)
 - shadcn/ui 초기화 (`pnpm dlx shadcn@latest init`)
@@ -77,6 +99,7 @@ pnpm tsc --noEmit # 타입 체크
 **검증:** `pnpm build` 성공
 
 **생성/수정 파일:**
+
 - `package.json` (수정)
 - `components.json` (shadcn 설정)
 - `src/components/ui/*` (shadcn 컴포넌트)
@@ -84,7 +107,9 @@ pnpm tsc --noEmit # 타입 체크
 ---
 
 ### Step 2: 기초 파일 생성 — 타입 정의 + 환경변수
+
 **작업 내용:**
+
 - `src/types/index.ts` — 공유 타입 정의 (`QueryResult`, `ChartConfig`)
 - `.env.local` — 환경변수 플레이스홀더 생성
 - `.env.example` — 환경변수 설정 가이드 (git 커밋용)
@@ -93,14 +118,16 @@ pnpm tsc --noEmit # 타입 체크
 **검증:** `pnpm tsc --noEmit` 통과
 
 **생성 파일:**
+
 - `src/types/index.ts`
 - `.env.local`
 - `.env.example`
 
 **핵심 타입:**
+
 ```typescript
 interface ChartConfig {
-  chartType: 'bar' | 'line' | 'pie' | 'none';
+  chartType: "bar" | "line" | "pie" | "none";
   xKey: string;
   yKey: string;
   title: string;
@@ -120,7 +147,9 @@ interface QueryResult {
 ---
 
 ### Step 3: DB 관련 파일 생성 — Supabase 클라이언트 + Seed SQL
+
 **작업 내용:**
+
 - `src/lib/supabase.ts` — Supabase 서버 클라이언트 (anon key + RLS)
 - `supabase/seed.sql` — 테이블 생성 + 더미데이터 + `execute_sql` RPC 함수
 - `src/lib/schema.ts` — DDL 스키마 문자열 + few-shot 예시 (AI 프롬프트용)
@@ -128,11 +157,13 @@ interface QueryResult {
 **검증:** `pnpm tsc --noEmit` 통과
 
 **생성 파일:**
+
 - `src/lib/supabase.ts`
 - `src/lib/schema.ts`
 - `supabase/seed.sql`
 
 **DB 테이블:**
+
 - `customers` (1,000건): id, name, email, city(20개 도시), age, gender, joined_at
 - `products` (50건): id, name, category(10개 카테고리), brand, price, stock, rating, created_at
 - `orders` (3,000건): id, customer_id(FK), product_id(FK), quantity, total_price, order_date, status
@@ -140,22 +171,28 @@ interface QueryResult {
 ---
 
 ### Step 4: SQL 검증 모듈
+
 **작업 내용:**
+
 - `src/lib/validate-sql.ts` — SQL 안전성 검증
 
 **검증 규칙:**
+
 - SELECT 또는 WITH으로 시작하는지 확인
 - 위험 키워드 차단: INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE
 - 다중 statement 차단 (세미콜론 중간 위치 거부)
 
 **검증:** `pnpm tsc --noEmit` 통과 + vitest 테스트 코드 작성 (`pnpm vitest run`)
+
 - `pnpm add -D vitest` 설치 필요
 
 **생성 파일:**
+
 - `src/lib/validate-sql.ts`
 - `src/lib/__tests__/validate-sql.test.ts`
 
 **테스트 케이스:**
+
 - `SELECT * FROM users` → 통과
 - `WITH cte AS (...) SELECT ...` → 통과
 - `DROP TABLE users` → 차단
@@ -165,10 +202,13 @@ interface QueryResult {
 ---
 
 ### Step 5: AI 모듈
+
 **작업 내용:**
+
 - `src/lib/ai.ts` — Gemini 프롬프트 구성 + `generateText` + `Output.object()` 호출
 
 **핵심 구현:**
+
 - System prompt에 DDL 스키마 + few-shot 예시 포함
 - Zod 스키마로 구조화된 출력: `{ sql, chartConfig, explanation }`
 - 모델: `gemini-2.5-flash`
@@ -178,15 +218,19 @@ interface QueryResult {
 **검증:** `pnpm tsc --noEmit` 통과
 
 **생성 파일:**
+
 - `src/lib/ai.ts`
 
 ---
 
 ### Step 6: Server Action
+
 **작업 내용:**
+
 - `src/app/actions.ts` — 전체 흐름 조율 (AI 호출 → SQL 검증 → DB 실행)
 
 **흐름:**
+
 1. 유저 자연어 입력 받기
 2. `generateSqlQuery()` (AI 호출)
 3. `validateSQL()` (안전성 검증)
@@ -196,12 +240,15 @@ interface QueryResult {
 **검증:** `pnpm tsc --noEmit` 통과
 
 **생성 파일:**
+
 - `src/app/actions.ts`
 
 ---
 
 ### Step 7: UI 컴포넌트 (6개) — shadcn/ui 기반
+
 **작업 내용:**
+
 - `src/components/query-input.tsx` — 텍스트 입력 + 예시 질문 버튼 (shadcn Button, Input 사용)
 - `src/components/sql-viewer.tsx` — 생성된 SQL + 설명 표시 (shadcn Card 사용)
 - `src/components/results-table.tsx` — 쿼리 결과 테이블 (shadcn Table 사용)
@@ -214,6 +261,7 @@ interface QueryResult {
 **검증:** `pnpm tsc --noEmit` 통과
 
 **생성 파일:**
+
 - `src/components/query-input.tsx`
 - `src/components/sql-viewer.tsx`
 - `src/components/results-table.tsx`
@@ -224,20 +272,25 @@ interface QueryResult {
 ---
 
 ### Step 8: 메인 페이지 + 레이아웃 수정
+
 **작업 내용:**
+
 - `src/app/page.tsx` — 메인 UI로 교체 (Server Component, QueryContainer 렌더링)
 - `src/app/layout.tsx` — 메타데이터 수정 (title, description, lang="ko")
 
 **검증:** `pnpm tsc --noEmit` + `pnpm build` 통과
 
 **수정 파일:**
+
 - `src/app/page.tsx` (교체)
 - `src/app/layout.tsx` (수정)
 
 ---
 
 ### Step 9: Supabase 설정 (유저 직접 수행)
+
 **유저가 직접 수행하는 단계:**
+
 1. [supabase.com](https://supabase.com) 가입 → 새 프로젝트 생성
 2. SQL Editor에서 `supabase/seed.sql` 전체 내용 복사-붙여넣기 → Run (RLS 정책 포함)
 3. Settings > API에서 Project URL과 **anon key** 복사
@@ -247,11 +300,14 @@ interface QueryResult {
 ---
 
 ### Step 10: E2E 테스트 — Playwright MCP 활용
+
 **작업 내용:**
+
 - Playwright 설치 및 설정
 - Playwright MCP를 활용하여 E2E 테스트 실행
 
 **테스트 시나리오:**
+
 1. "도시별 고객 수는?" → bar 차트 + 테이블 렌더링 확인
 2. "월별 매출 추이 보여줘" → line 차트 + 테이블 렌더링 확인
 3. "30달러 미만 상품 목록" → 테이블만 표시 확인
@@ -311,12 +367,14 @@ CLAUDE.md                ← 이 파일
 ```
 
 ## 보안 모델
+
 - **Supabase**: anon key + RLS → SELECT만 허용, 시스템 테이블 접근 차단
 - **execute_sql**: `SECURITY INVOKER` → anon 권한으로 실행, RLS 적용
 - **Google AI API key**: 사용자 브라우저 localStorage에만 저장 → Server Action 호출 시 전달
 - **SQL 검증**: `validateSQL()`로 위험 키워드 차단 (이중 방어)
 
 ## 주의사항
+
 - Recharts는 SSR 미지원 → `"use client"` 필수
 - Recharts SVG는 CSS 변수(`hsl(var(...))`)를 해석 못함 → 고정 HEX 색상 팔레트 사용
 - Supabase의 NUMERIC 컬럼은 문자열로 반환 → ChartView에서 `BigNumber().decimalPlaces(2, ROUND_DOWN).toNumber()` 처리
