@@ -24,7 +24,7 @@
 - bignumber.js — 숫자 소수점 2자리 버림 처리
 - Zod — AI 응답 구조화
 - **테스트**: vitest (단위 테스트) + Playwright (E2E 테스트, Playwright MCP 활용)
-- **개발 도구**: husky (pre-commit hook) + lint-staged (staged 파일 자동 검사) + prettier (코드 포맷터)
+- **개발 도구**: husky (pre-commit hook) + lint-staged (staged 파일 자동 검사) + prettier (코드 포맷터) + knip (dead code 탐지) + eslint-plugin-simple-import-sort (import 순서 자동 정렬)
 
 ## MCP 설정
 
@@ -78,6 +78,8 @@ pnpm build        # 빌드
 pnpm tsc --noEmit # 타입 체크
 pnpm test         # 단위 테스트 (vitest)
 pnpm test:watch   # 테스트 watch 모드
+pnpm test:e2e     # E2E 테스트 (Playwright)
+pnpm knip         # 미사용 코드/의존성 탐지
 ```
 
 ---
