@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+
 import {
   Card,
   CardContent,
@@ -24,7 +25,7 @@ function tokenizeSQL(sql: string): SqlToken[] {
   const tokens: SqlToken[] = [];
   const combined = new RegExp(
     `(${SQL_STRINGS.source})|(${SQL_KEYWORDS.source})|(${SQL_NUMBERS.source})`,
-    "gi"
+    "gi",
   );
 
   let lastIndex = 0;

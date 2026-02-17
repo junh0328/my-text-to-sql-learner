@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+
 import { validateSQL } from "../validate-sql";
 
 describe("validateSQL", () => {
@@ -9,8 +10,7 @@ describe("validateSQL", () => {
     });
 
     it("WITH (CTE) 쿼리", () => {
-      const sql =
-        "WITH cte AS (SELECT id FROM users) SELECT * FROM cte";
+      const sql = "WITH cte AS (SELECT id FROM users) SELECT * FROM cte";
       expect(validateSQL(sql).valid).toBe(true);
     });
 

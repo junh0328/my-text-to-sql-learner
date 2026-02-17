@@ -1,6 +1,7 @@
-import { generateText, Output } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { generateText, Output } from "ai";
 import { z } from "zod";
+
 import { DATABASE_SCHEMA, FEW_SHOT_EXAMPLES } from "./schema";
 
 const aiResponseSchema = z.object({
@@ -16,17 +17,15 @@ const aiResponseSchema = z.object({
     })
     .nullable()
     .describe("차트 설정. 원시 데이터 목록이면 null"),
-  explanation: z
-    .string()
-    .describe("사용자에게 보여줄 쿼리 설명 (한국어)"),
+  explanation: z.string().describe("사용자에게 보여줄 쿼리 설명 (한국어)"),
 });
 
-export type AiResponse = z.infer<typeof aiResponseSchema>;
+type AiResponse = z.infer<typeof aiResponseSchema>;
 
 function buildSystemPrompt(): string {
   const examples = FEW_SHOT_EXAMPLES.map(
     (ex) =>
-      `질문: ${ex.question}\nSQL: ${ex.sql}\nchartConfig: ${JSON.stringify(ex.chartConfig)}\nexplanation: ${ex.explanation}`
+      `질문: ${ex.question}\nSQL: ${ex.sql}\nchartConfig: ${JSON.stringify(ex.chartConfig)}\nexplanation: ${ex.explanation}`,
   ).join("\n\n");
 
   return `당신은 PostgreSQL 전문가입니다. 사용자의 자연어 질문을 SQL 쿼리로 변환합니다.
@@ -52,7 +51,7 @@ ${examples}`;
 
 export async function generateSqlQuery(
   userQuestion: string,
-  apiKey: string
+  apiKey: string,
 ): Promise<AiResponse> {
   const google = createGoogleGenerativeAI({ apiKey });
 

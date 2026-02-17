@@ -1,18 +1,19 @@
 "use client";
 
-import { useState } from "react";
 import { Settings } from "lucide-react";
+import { useState } from "react";
+
 import { executeQuery } from "@/app/actions";
-import { useApiKey } from "@/hooks/use-api-key";
 import { ApiKeyDialog } from "@/components/api-key-dialog";
-import { QueryInput } from "@/components/query-input";
-import { SqlViewer } from "@/components/sql-viewer";
-import { ResultsTable } from "@/components/results-table";
 import { ChartView } from "@/components/chart-view";
 import { ErrorMessage } from "@/components/error-message";
+import { QueryInput } from "@/components/query-input";
 import { ResultSkeleton } from "@/components/result-skeleton";
+import { ResultsTable } from "@/components/results-table";
+import { SqlViewer } from "@/components/sql-viewer";
 import { TextType } from "@/components/text-type";
 import { Button } from "@/components/ui/button";
+import { useApiKey } from "@/hooks/use-api-key";
 import type { QueryResult } from "@/types";
 
 export function QueryContainer() {

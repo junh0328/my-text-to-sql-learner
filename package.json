@@ -9,7 +9,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "knip": "knip"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.22",
@@ -38,14 +41,18 @@
     "*.{ts,tsx,js,json,md}": "prettier --write --ignore-unknown"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.0.18",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
     "husky": "^9.1.7",
+    "knip": "^5.83.1",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "shadcn": "^3.8.4",

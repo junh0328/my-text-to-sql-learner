@@ -12,6 +12,7 @@
 | [design.md](./design.md)                       | 비즈니스 로직 상세 설계 (시퀀스 다이어그램, API Key 흐름, 에러 처리) |
 | [optimization_list.md](./optimization_list.md) | 코드 평가 기반 개선 사항 목록 (우선순위별)                           |
 | [supabase/seed.sql](./supabase/seed.sql)       | DB 테이블 생성 + 시드 데이터 + RPC 함수 + RLS 정책                   |
+| [docs/adr/](./docs/adr/)                       | Architecture Decision Records (기술 선택 배경 기록)                  |
 
 ## 기술 스택
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
 interface ApiKeyDialogProps {
   open: boolean;
@@ -56,10 +57,7 @@ export function ApiKeyDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={hasKey ? onOpenChange : undefined}
-    >
+    <Dialog open={open} onOpenChange={hasKey ? onOpenChange : undefined}>
       <DialogContent
         className="sm:max-w-md"
         showCloseButton={hasKey}
@@ -96,9 +94,7 @@ export function ApiKeyDialog({
               placeholder="AIzaSy..."
               className="font-mono"
             />
-            {error && (
-              <p className="text-sm text-red-500">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
 
           <DialogFooter className="gap-2">
@@ -111,9 +107,7 @@ export function ApiKeyDialog({
                 삭제
               </Button>
             )}
-            <Button type="submit">
-              {hasKey ? "키 변경" : "저장"}
-            </Button>
+            <Button type="submit">{hasKey ? "키 변경" : "저장"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

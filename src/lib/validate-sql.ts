@@ -11,7 +11,7 @@ const DANGEROUS_KEYWORDS = [
   "EXEC",
 ];
 
-export interface ValidationResult {
+interface ValidationResult {
   valid: boolean;
   error?: string;
 }
